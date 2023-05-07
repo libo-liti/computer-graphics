@@ -10,6 +10,12 @@
 #define	PI				3.1415
 #define	polygon_num		50
 
+/*	조작법
+방향키로 bar 이동
+u 공 속도 빠르게	d 공 속도 느리게
+n 공 멈추기			r 리셋
+*/
+
 int		num = 1;
 int		left = 0;
 int		bottom = 0;
@@ -113,7 +119,7 @@ float Point_to_Line(Point p, Point a, Point b) // 점과 선분 사이의 거리
 	float dot_product = (p.x - a.x) * (b.x - a.x) + (p.y - a.y) * (b.y - a.y); // 내적값
 	float cross_product = abs((a.x - p.x) * (b.y - p.y) - (a.y - p.y) * (b.x - p.x)); // 외적
 	float ab = dist(a, b);
-	if (dot_product < 0) return dist(a, p); // 내적갑이 마이너스라서 ap 거리
+	if (dot_product < 0) return dist(a, p); // 내적값이 마이너스라서 ap 거리
 	else if (dot_product / ab > ab) return dist(b, p); // 정사영 길이가 ab 길이보다 길 경우 bp 거리
 	else return cross_product / ab; // 정사영 거리(외적 / ab길이) Why? 외적 == 평행사변형 넓이
 }
@@ -144,7 +150,7 @@ Point Collision_Point(Point p, Point a, Point b) // 충돌 지점 Why? 이동했을때 벽
 void init(void)
 {
 	ball.ball_speed(0.125, 0.075);
-	bar.bar_size_change(600, 25);
+	bar.bar_size_change(300, 25);
 }
 
 void MyReshape(int w, int h) {
