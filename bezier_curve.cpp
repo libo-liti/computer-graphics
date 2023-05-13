@@ -8,16 +8,15 @@
 #define		Window_Height	800
 
 int			point[100][2];
-int			p[100][2];
 int			num = 0;
 
-long long factorial(int n)
+double factorial(int n)
 {
 	if (n <= 1) return 1;
 	else return n * factorial(n - 1);
 }
 
-float binomial(int n, int i)
+double binomial(int n, int i) // 조합
 {
 	float value = factorial(n) / (factorial(n - i) * factorial(i));
 	return value;
@@ -33,14 +32,14 @@ float bernstein(int degree, int index, float time)
 void Draw_Bezier_Curve(void)
 {
 	int curve_degree;
-	int curvepoint_num = num;
+	int curvepoint_num = 100; // 한 점과 한 점 사이에 몇등분 할것인지
 	float patial_time;
 	float sumx;
 	float sumy;
 
 	glColor3f(1.0, 1.0, 0.0);
 	
-	curve_degree = curvepoint_num - 1;
+	curve_degree = num - 1; // 점의 개수 - 1 차식
 	patial_time = 1.0 / curvepoint_num;
 
 	glBegin(GL_LINE_STRIP);
@@ -48,7 +47,7 @@ void Draw_Bezier_Curve(void)
 	{
 		sumx = sumy = 0.0;
 	
-		for (int i = 0; i < curvepoint_num; i++)
+		for (int i = 0; i <= curve_degree; i++)
 		{
 			sumx += bernstein(curve_degree, i, time) * point[i][0];
 			sumy += bernstein(curve_degree, i, time) * point[i][1];
