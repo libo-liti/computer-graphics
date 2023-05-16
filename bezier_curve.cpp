@@ -33,20 +33,19 @@ void Draw_Bezier_Curve(void)
 {
 	int curve_degree;
 	int curvepoint_num = 100; // 한 점과 한 점 사이에 몇등분 할것인지
-	float patial_time;
+	double patial_time;
 	float sumx;
 	float sumy;
 
 	glColor3f(1.0, 1.0, 0.0);
-	
+
 	curve_degree = num - 1; // 점의 개수 - 1 차식
 	patial_time = 1.0 / curvepoint_num;
-
 	glBegin(GL_LINE_STRIP);
-	for (float time = 0; time <= 1.0; time += patial_time)
+	for (float time = 0; time < 1.0; time += patial_time)
 	{
 		sumx = sumy = 0.0;
-	
+
 		for (int i = 0; i <= curve_degree; i++)
 		{
 			sumx += bernstein(curve_degree, i, time) * point[i][0];
@@ -54,6 +53,7 @@ void Draw_Bezier_Curve(void)
 		}
 		glVertex2f(sumx, sumy);
 	}
+	glVertex2f(point[curve_degree][0], point[curve_degree][1]);
 	glEnd();
 }
 void Draw_Control_Points(void) {
