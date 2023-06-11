@@ -10,6 +10,7 @@
 #include < GL/freeglut.h>
 #include <string>
 #include <cstdlib>
+using namespace std;
 
 #pragma comment(lib, "winmm.lib")
 #include "Mmsystem.h"
@@ -48,9 +49,10 @@ int clear_time;
 int select_num;
 int flag;
 bool main_num;
+bool input_flag;
 float angle;
 
-time_t start, end;
+time_t start, finish;
 
 void bgm(int mode);
 void field_select();
@@ -249,12 +251,126 @@ void collision_process(Point a, Point b, Moving_ball& moving_ball)
 	PlaySound("sound.wav", 0, SND_FILENAME | SND_ASYNC);
 }
 
+class Rank
+{
+public:
+	Rank()
+	{
+		fill(&record[0], &record[3], 10000);
+		fill(&stage[0], &stage[3], 1);
+		record_name[0] = "";
+		record_name[1] = "";
+		record_name[2] = "";
+	}
+	void compare(int r, string n);
+	void compare_stage(int s, string n);
+	void record_print();
+	void stage_print();
+	int record[3], stage[3];
+	string record_name[3];
+};
+void Rank::compare(int r, string n)
+{
+
+	if (record[0] > r)
+	{
+		record[2] = record[1];
+		record[1] = record[0];
+		record[0] = r;
+
+		record_name[2] = record_name[1];
+		record_name[1] = record_name[0];
+		record_name[0] = n;
+		return;
+	}
+	else if (record[1] > r)
+	{
+		record[2] = record[1];
+		record[1] = r;
+
+		record_name[2] = record_name[1];
+		record_name[1] = n;
+		return;
+	}
+	else if (record[2] > r)
+	{
+		record[2] = r;
+		record_name[2] = n;
+		return;
+	}
+
+}
+void Rank::compare_stage(int s, string n)
+{
+	if (stage[0] < s)
+	{
+		stage[2] = stage[1];
+		stage[1] = stage[0];
+		stage[0] = s;
+
+		record_name[2] = record_name[1];
+		record_name[1] = record_name[0];
+		record_name[0] = n;
+		return;
+	}
+	else if (stage[1] < s)
+	{
+		stage[2] = stage[1];
+		stage[1] = s;
+
+		record_name[2] = record_name[1];
+		record_name[1] = n;
+		return;
+	}
+	else if (stage[2] < s)
+	{
+		stage[2] = s;
+		record_name[2] = n;
+		return;
+	}
+}
+void Rank::record_print()
+{
+	for(int i = 0; i < 3; i++)
+		if (record[i] != 10000)
+		{
+			string time_print, time_min, time_sec;
+
+			if (record[i] / 60 < 10)
+				time_min = "0" + to_string(record[i] / 60);
+			else
+				time_min = to_string(record[i] / 60);
+			if (record[i] % 60 < 10)
+				time_sec = "0" + to_string(record[i] % 60);
+			else
+				time_sec = to_string(record[i] % 60);
+			time_print = to_string(i + 1) + ". " + time_min + " : " + time_sec + " " + record_name[i];
+
+			const unsigned char* t = (unsigned char*)time_print.c_str();
+			glRasterPos2i(width + 10, height / 10 * 9 - 30 * i);
+			glutBitmapString(GLUT_BITMAP_TIMES_ROMAN_24, t);
+		}
+}
+void Rank::stage_print()
+{
+	for(int i = 0; i < 3; i++)
+		if (stage[i] != 1)
+		{
+			string stage_p;
+			stage_p = to_string(i + 1) + ". stage " + to_string(stage[i]) + " " + record_name[i];
+
+			const unsigned char* t = (unsigned char*)stage_p.c_str();
+			glRasterPos2i(width + 10, height / 10 * 9 - 30 * i);
+			glutBitmapString(GLUT_BITMAP_TIMES_ROMAN_24, t);
+		}
+}
+
 class Rect
 {
 public:
 	Rect() : brick_width(98), brick_height(20), clear_flag(0), stop(0), brick_num(150)
 	{
-		std::fill(&brick[0][0], &brick[14][10], 1);
+		fill(&brick[0][0], &brick[14][10], 1);
 
 		wall[0].change(5, 0);					// 좌하
 		wall[1].change(5, height - 5);			// 좌상
@@ -268,6 +384,7 @@ public:
 	void clear();
 	void reset();
 	Point wall[4];
+	Rank rank;
 	int brick_width, brick_height, brick_num;
 	bool brick[15][10], clear_flag, stop;
 };
@@ -425,13 +542,13 @@ void Rect::clear()
 {
 	if (!brick_num)
 	{
-		std::string time_print, time_min, time_sec;
+		string time_print, time_min, time_sec;
 		ball.ball_speed(0, 0);
 
 		if (!stop)
 		{
-			time(&end);
-			clear_time = (int)(end - start);
+			time(&finish);
+			clear_time = (int)(finish - start);
 			stop = 1;
 		}
 
@@ -439,13 +556,13 @@ void Rect::clear()
 		time_sec = clear_time % 60;
 
 		if (clear_time / 60 < 10)
-			time_min = "0" + std::to_string(clear_time / 60);
+			time_min = "0" + to_string(clear_time / 60);
 		else
-			time_min = std::to_string(clear_time / 60);
+			time_min = to_string(clear_time / 60);
 		if (clear_time % 60 < 10)
-			time_sec = "0" + std::to_string(clear_time % 60);
+			time_sec = "0" + to_string(clear_time % 60);
 		else
-			time_sec = std::to_string(clear_time % 60);
+			time_sec = to_string(clear_time % 60);
 		time_print = "clear time : " + time_min + " : " + time_sec;
 
 		const unsigned char* t = (unsigned char*)time_print.c_str();
@@ -461,7 +578,7 @@ void Rect::clear()
 }
 void Rect::reset()
 {
-	std::fill(&brick[0][0], &brick[14][10], 1);
+	fill(&brick[0][0], &brick[14][10], 1);
 	stop = 0;
 	brick_num = 150;
 }
@@ -471,7 +588,7 @@ class Rhombus
 public:
 	Rhombus() : brick_width(80), brick_height(40), clear_flag(0), stop(0), brick_num(36)
 	{
-		std::fill(&brick[0][0], &brick[5][6], 1);
+		fill(&brick[0][0], &brick[5][6], 1);
 
 		wall[0].change(0, height / 2);
 		wall[1].change(width / 2, height);
@@ -485,6 +602,7 @@ public:
 	void clear();
 	void reset();
 	Point wall[4];
+	Rank rank;
 	int brick_width, brick_height, brick_num;
 	bool brick[6][6], clear_flag, stop;
 };
@@ -699,13 +817,13 @@ void Rhombus::clear()
 {
 	if (!brick_num)
 	{
-		std::string time_print, time_min, time_sec;
+		string time_print, time_min, time_sec;
 		ball.ball_speed(0, 0);
 
 		if (!stop)
 		{
-			time(&end);
-			clear_time = (int)(end - start);
+			time(&finish);
+			clear_time = (int)(finish - start);
 			stop = 1;
 		}
 
@@ -713,13 +831,13 @@ void Rhombus::clear()
 		time_sec = clear_time % 60;
 
 		if (clear_time / 60 < 10)
-			time_min = "0" + std::to_string(clear_time / 60);
+			time_min = "0" + to_string(clear_time / 60);
 		else
-			time_min = std::to_string(clear_time / 60);
+			time_min = to_string(clear_time / 60);
 		if (clear_time % 60 < 10)
-			time_sec = "0" + std::to_string(clear_time % 60);
+			time_sec = "0" + to_string(clear_time % 60);
 		else
-			time_sec = std::to_string(clear_time % 60);
+			time_sec = to_string(clear_time % 60);
 		time_print = "clear time : " + time_min + " : " + time_sec;
 
 		const unsigned char* t = (unsigned char*)time_print.c_str();
@@ -735,7 +853,7 @@ void Rhombus::clear()
 }
 void Rhombus::reset()
 {
-	std::fill(&brick[0][0], &brick[5][6], 1);
+	fill(&brick[0][0], &brick[5][6], 1);
 	stop = 0;
 	brick_num = 36;
 }
@@ -745,7 +863,7 @@ class Circle
 public:
 	Circle() : mid(width / 2, height / 2), radius(300), brick_width(80), brick_height(40), clear_flag(0), stop(0), brick_num(36)
 	{
-		std::fill(&brick[0][0], &brick[5][6], 1);
+		fill(&brick[0][0], &brick[5][6], 1);
 	}
 	void field();
 	void draw_brick();
@@ -754,6 +872,7 @@ public:
 	void clear();
 	void reset();
 	Point mid;
+	Rank rank;
 	float radius;
 	int brick_width, brick_height, brick_num;
 	bool brick[6][6], clear_flag, stop;
@@ -970,13 +1089,13 @@ void Circle::clear()
 {
 	if (!brick_num)
 	{
-		std::string time_print, time_min, time_sec;
+		string time_print, time_min, time_sec;
 		ball.ball_speed(0, 0);
 
 		if (!stop)
 		{
-			time(&end);
-			clear_time = (int)(end - start);
+			time(&finish);
+			clear_time = (int)(finish - start);
 			stop = 1;
 		}
 
@@ -984,13 +1103,13 @@ void Circle::clear()
 		time_sec = clear_time % 60;
 
 		if (clear_time / 60 < 10)
-			time_min = "0" + std::to_string(clear_time / 60);
+			time_min = "0" + to_string(clear_time / 60);
 		else
-			time_min = std::to_string(clear_time / 60);
+			time_min = to_string(clear_time / 60);
 		if (clear_time % 60 < 10)
-			time_sec = "0" + std::to_string(clear_time % 60);
+			time_sec = "0" + to_string(clear_time % 60);
 		else
-			time_sec = std::to_string(clear_time % 60);
+			time_sec = to_string(clear_time % 60);
 		time_print = "clear time : " + time_min + " : " + time_sec;
 
 		const unsigned char* t = (unsigned char*)time_print.c_str();
@@ -1006,7 +1125,7 @@ void Circle::clear()
 }
 void Circle::reset()
 {
-	std::fill(&brick[0][0], &brick[5][6], 1);
+	fill(&brick[0][0], &brick[5][6], 1);
 	stop = 0;
 	brick_num = 36;
 }
@@ -1017,7 +1136,7 @@ public:
 	Field() : num(0), brick_width(50), brick_height(35), stage(1), x(0), y(0),
 		zero(0), brick_num(1), bar_flag(1)
 	{
-		std::fill(&brick[0][0], &brick[14][20], 0);
+		fill(&brick[0][0], &brick[14][20], 0);
 		wall[0].change(0, 0);
 	}
 	void draw();
@@ -1028,6 +1147,7 @@ public:
 	void reset();
 
 	Point wall[100];
+	Rank rank;
 	int num, brick_width, brick_height, brick_num, stage, x, y;
 	bool brick[15][20], zero, bar_flag;
 };
@@ -1167,7 +1287,7 @@ void Field::stage_mode()
 
 	if (brick_num == 0)
 	{
-		std::fill(&brick[0][0], &brick[14][20], 0);
+		fill(&brick[0][0], &brick[14][20], 0);
 		stage++;
 		brick_num = stage;
 		bar_flag = 1;
@@ -1183,7 +1303,7 @@ void Field::stage_mode()
 void Field::reset()
 {
 	stage = 1; zero = 0; bar_flag = 1; brick_num = 1;
-	std::fill(&brick[0][0], &brick[14][20], 0);
+	fill(&brick[0][0], &brick[14][20], 0);
 }
 Field field;
 
@@ -1207,7 +1327,7 @@ public:
 		wall[4].change(width - 5, 0);			// 우하
 		wall[5].change(width / 2, 0);			// 중하
 
-		std::fill(&brick[0][0][0], &brick[5][4][2], 1);
+		fill(&brick[0][0][0], &brick[5][4][2], 1);
 	}
 	void field();
 	void collision_wall();
@@ -1450,14 +1570,14 @@ void Couple::clear()
 {
 	if (!brick_num[0] || !brick_num[1])
 	{
-		std::string time_print, time_min, time_sec;
+		string time_print, time_min, time_sec;
 		ball[0].ball_speed(0, 0);
 		ball[1].ball_speed(0, 0);
 
 		if (!stop)
 		{
-			time(&end);
-			clear_time = (int)(end - start);
+			time(&finish);
+			clear_time = (int)(finish - start);
 			stop = 1;
 		}
 
@@ -1465,13 +1585,13 @@ void Couple::clear()
 		time_sec = clear_time % 60;
 
 		if (clear_time / 60 < 10)
-			time_min = "0" + std::to_string(clear_time / 60);
+			time_min = "0" + to_string(clear_time / 60);
 		else
-			time_min = std::to_string(clear_time / 60);
+			time_min = to_string(clear_time / 60);
 		if (clear_time % 60 < 10)
-			time_sec = "0" + std::to_string(clear_time % 60);
+			time_sec = "0" + to_string(clear_time % 60);
 		else
-			time_sec = std::to_string(clear_time % 60);
+			time_sec = to_string(clear_time % 60);
 		time_print = "clear time : " + time_min + " : " + time_sec;
 
 		const unsigned char* t = (unsigned char*)time_print.c_str();
@@ -1501,7 +1621,7 @@ void Couple::reset()
 	bar[1].pos.x = width / 4 * 3; bar[1].pos.y = height / 5;
 	ball[0].pos.x = width / 4; ball[0].pos.y = height / 5 + ball[0].radius;
 	ball[1].pos.x = width / 4 * 3; ball[1].pos.y = height / 5 + ball[0].radius;
-	std::fill(&brick[0][0][0], &brick[5][4][2], 1);
+	fill(&brick[0][0][0], &brick[5][4][2], 1);
 	stop = 0;
 	brick_num[0] = 30;
 	brick_num[1] = 30;
@@ -1527,13 +1647,12 @@ void init(void)
 	couple.ball[1].pos.x = width / 4 * 3; couple.ball[1].pos.y = height / 4;
 	couple.ball[0].ball_speed(0.125, 0.075); couple.ball[1].ball_speed(0.125, 0.075);
 	couple.bar[0].bar_width = 100; couple.bar[1].bar_width = 100;
-	//time(&start);	//time(&end);
 	srand((unsigned int)time(NULL));
 }
 
 void main_screen()
 {
-	std::string game_start, game_exit, control_key, select;
+	string game_start, game_exit, control_key, select;
 	game_start = "start";
 	const unsigned char* s = (unsigned char*)game_start.c_str();
 	if(select_num == 0)
@@ -1653,7 +1772,15 @@ void game_over()
 	{
 		main_num = 0;
 		flag = 2;
-		std::string stage_print, time_print, time_min, time_sec;
+		string stage_print, time_print, time_min, time_sec, str;
+
+		if (field_shape == 4 && !input_flag)
+		{
+			cout << "please your nickname : ";
+			cin >> str;
+			field.rank.compare_stage(field.stage, str);
+			input_flag = 1;
+		}
 
 		glColor3f(1.0f, 1.0f, 1.0f);
 		const unsigned char* a = reinterpret_cast<const unsigned char*>("     Game Over");
@@ -1662,19 +1789,19 @@ void game_over()
 
 		if (field_shape == 4)
 		{
-			stage_print = "stage : " + std::to_string(field.stage);
+			stage_print = "stage : " + to_string(field.stage);
 			const unsigned char* s = (unsigned char*)stage_print.c_str();
 			glRasterPos2i(width / 2, height / 2 + 50);
 			glutBitmapString(GLUT_BITMAP_TIMES_ROMAN_24, s);
 		}
 		if (current_time / 60 < 10)
-			time_min = "0" + std::to_string(current_time / 60);
+			time_min = "0" + to_string(current_time / 60);
 		else
-			time_min = std::to_string(current_time / 60);
+			time_min = to_string(current_time / 60);
 		if (current_time % 60 < 10)
-			time_sec = "0" + std::to_string(current_time % 60);
+			time_sec = "0" + to_string(current_time % 60);
 		else
-			time_sec = std::to_string(current_time % 60);
+			time_sec = to_string(current_time % 60);
 		time_print = "time : " + time_min + " : " + time_sec;
 
 		const unsigned char* t = (unsigned char*)time_print.c_str();
@@ -1693,7 +1820,20 @@ void game_clear()
 	{
 		main_num = 0;
 		flag = 2;
-		std::string stage_print, time_print, time_min, time_sec;
+		string stage_print, time_print, time_min, time_sec, str;
+
+		if (!input_flag)
+		{
+			cout << "please your nickname : ";
+			cin >> str;
+			if (!rect.brick_num)
+				rect.rank.compare(current_time, str);
+			else if (!rhombus.brick_num)
+				rhombus.rank.compare(current_time, str);
+			else if (!circle.brick_num)
+				circle.rank.compare(current_time, str);
+			input_flag = 1;
+		}
 
 		glColor3f(1.0f, 1.0f, 1.0f);
 		const unsigned char* a = reinterpret_cast<const unsigned char*>("     Game Clear");
@@ -1708,13 +1848,13 @@ void game_clear()
 			glutBitmapString(GLUT_BITMAP_TIMES_ROMAN_24, s);
 		}
 		if (current_time / 60 < 10)
-			time_min = "0" + std::to_string(current_time / 60);
+			time_min = "0" + to_string(current_time / 60);
 		else
-			time_min = std::to_string(current_time / 60);
+			time_min = to_string(current_time / 60);
 		if (current_time % 60 < 10)
-			time_sec = "0" + std::to_string(current_time % 60);
+			time_sec = "0" + to_string(current_time % 60);
 		else
-			time_sec = std::to_string(current_time % 60);
+			time_sec = to_string(current_time % 60);
 		time_print = "time : " + time_min + " : " + time_sec;
 
 		const unsigned char* t = (unsigned char*)time_print.c_str();
@@ -1730,7 +1870,7 @@ void game_clear()
 	{
 		main_num = 0;
 		flag = 2;
-		std::string time_print, time_min, time_sec, winner;
+		string time_print, time_min, time_sec, winner;
 
 		glColor3f(1.0f, 1.0f, 1.0f);
 		const unsigned char* a = reinterpret_cast<const unsigned char*>("     Game Over");
@@ -1747,13 +1887,13 @@ void game_clear()
 		glutBitmapString(GLUT_BITMAP_TIMES_ROMAN_24, s);
 
 		if (current_time / 60 < 10)
-			time_min = "0" + std::to_string(current_time / 60);
+			time_min = "0" + to_string(current_time / 60);
 		else
-			time_min = std::to_string(current_time / 60);
+			time_min = to_string(current_time / 60);
 		if (current_time % 60 < 10)
-			time_sec = "0" + std::to_string(current_time % 60);
+			time_sec = "0" + to_string(current_time % 60);
 		else
-			time_sec = std::to_string(current_time % 60);
+			time_sec = to_string(current_time % 60);
 		time_print = "time : " + time_min + " : " + time_sec;
 
 		const unsigned char* t = (unsigned char*)time_print.c_str();
@@ -1769,7 +1909,7 @@ void game_clear()
 
 void loading()
 {
-	angle += 0.2;
+	angle += 0.7;
 	float	delta;
 	glLineWidth(10);
 	delta = 2 * PI / polygon_num;
@@ -1814,22 +1954,22 @@ void Modeling_Circle(float radius, Point CC) {
 
 void text()
 {
-	std::string time_print, time_min, time_sec, bgm_name, game_mode_name, field_shape_name, stage_name;
+	string time_print, time_min, time_sec, bgm_name, game_mode_name, field_shape_name, stage_name;
 
-	time(&end);
-	current_time = end - start;
+	time(&finish);
+	current_time = finish - start;
 	if (current_time != last_time)
 		last_time = current_time;
 	//const unsigned char* t = reinterpret_cast<const unsigned char*>("text to render");
 
 	if (current_time / 60 < 10)
-		time_min = "0" + std::to_string(current_time / 60);
+		time_min = "0" + to_string(current_time / 60);
 	else
-		time_min = std::to_string(current_time / 60);
+		time_min = to_string(current_time / 60);
 	if (current_time % 60 < 10)
-		time_sec = "0" + std::to_string(current_time % 60);
+		time_sec = "0" + to_string(current_time % 60);
 	else
-		time_sec = std::to_string(current_time % 60);
+		time_sec = to_string(current_time % 60);
 	time_print = time_min + " : " + time_sec;
 
 	const unsigned char* t = (unsigned char*)time_print.c_str();
@@ -1898,9 +2038,9 @@ void text()
 
 	if (field_shape == 4)
 	{
-		stage_name = "stage : " + std::to_string(field.stage);
+		stage_name = "stage : " + to_string(field.stage);
 		const unsigned char* s = (unsigned char*)stage_name.c_str();
-		glRasterPos2i(width, height / 10 * 8);
+		glRasterPos2i(width, height / 10 * 6);
 		glutBitmapString(GLUT_BITMAP_TIMES_ROMAN_24, s);
 	}
 }
@@ -1917,23 +2057,27 @@ void field_select()
 		rect.draw_brick();
 		rect.collision_wall();
 		rect.collision_brick();
+		rect.rank.record_print();
 		break;
 	case 2:
 		rhombus.field();			// 마름모
 		rhombus.draw_brick();
 		rhombus.collision_wall();
 		rhombus.collision_brick();
+		rhombus.rank.record_print();
 		break;
 	case 3:
 		circle.field();				// 원
 		circle.draw_brick();
 		circle.collision_wall();
 		circle.collision_brick();
+		circle.rank.record_print();
 		break;
 	case 4:							// 사용자가 직접 만드는거
 		field.stage_mode();
 		field.draw_brick();
 		field.collision_brick();
+		field.rank.stage_print();
 		break;
 	default: break;
 	}
@@ -2112,6 +2256,7 @@ void Reset() // 초기상태로 돌리기
 	circle.reset();
 	field.reset();
 	clear_time = 0;
+	bar.bar_move = 1;
 	if (game_mode == 3 || game_mode == 4 || game_mode == 6)
 		bar.zelda_mode(ball);
 	field.num = 0;
@@ -2123,7 +2268,7 @@ void couple_reset()
 	couple.ball[0].pos.x = width / 4; couple.ball[0].pos.y = height / 4;
 	couple.ball[1].pos.x = width / 4 * 3; couple.ball[1].pos.y = height / 4;
 	couple.ball[0].ball_speed(0.125, 0.075); couple.ball[1].ball_speed(0.125, 0.075);
-	std::fill(&couple.brick[0][0][0], &couple.brick[5][4][2], 1);
+	fill(&couple.brick[0][0][0], &couple.brick[5][4][2], 1);
 	couple.reset();
 	clear_time = 0;
 	if (couple_game_mode == 3 || couple_game_mode == 4 || couple_game_mode == 5)
@@ -2136,27 +2281,27 @@ void clear_brick()
 {
 	if (field_shape == 0)
 	{
-		std::fill(&couple.brick[0][0][0], &couple.brick[5][4][2], 0);
+		fill(&couple.brick[0][0][0], &couple.brick[5][4][2], 0);
 		couple.brick_num[0] = couple.brick_num[1] = 0;
 	}
 	else if (field_shape == 1)
 	{
-		std::fill(&rect.brick[0][0], &rect.brick[14][10], 0);
+		fill(&rect.brick[0][0], &rect.brick[14][10], 0);
 		rect.brick_num = 0;
 	}
 	else if (field_shape == 2)
 	{
-		std::fill(&rhombus.brick[0][0], &rhombus.brick[5][6], 0);
+		fill(&rhombus.brick[0][0], &rhombus.brick[5][6], 0);
 		rhombus.brick_num = 0;
 	}
 	else if (field_shape == 3)
 	{
-		std::fill(&circle.brick[0][0], &circle.brick[5][6], 0);
+		fill(&circle.brick[0][0], &circle.brick[5][6], 0);
 		circle.brick_num = 0;
 	}
 	else if (field_shape == 4)
 	{
-		std::fill(&field.brick[0][0], &field.brick[14][20], 0);
+		fill(&field.brick[0][0], &field.brick[14][20], 0);
 		field.brick_num = 0;
 	}
 }
@@ -2198,6 +2343,7 @@ void MyKey(unsigned char key, int x, int y)
 			main_num = 1;
 			select_num = 0;
 			flag = 0;
+			input_flag = 0;
 			Reset();
 			couple_reset();
 			break;
